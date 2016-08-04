@@ -1,0 +1,107 @@
+import sys
+import os
+import numpy as np 
+from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
+from sklearn.decomposition import TruncatedSVD
+from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.preprocessing import Normalizer
+import HTMLParser
+import nltk
+from nltk.corpus import stopwords
+from collections import Counter
+
+
+html_parser = HTMLParser.HTMLParser()
+
+
+" GET TRUMP DATA "
+
+data = "/home/lee/Data/speaksLike-master/donald-trump"
+corpus = os.listdir(data)
+trumpText = []
+for f in corpus:
+	f = os.path.join(data, f)
+	with open(f) as doc:
+		contents = doc.read()
+		trumpText.append(contents)
+
+
+" GET CLINTON DATA "
+
+data = "/home/lee/Data/speaksLike-master/hillary-clinton"
+corpus = os.listdir(data)
+clintonText = []
+for f in corpus:
+	f = os.path.join(data, f)
+	with open(f) as doc:
+		contents = doc.read()
+		clintonText.append(contents)
+
+
+
+def cleanText(data):
+	cleaned = []
+	for transcript in data:
+		### remove partial transcript notice
+		if transcript[:7]=='Partial':transcript=transcript[transcript.find('\n')+1:]
+		### remove Spotlight: ABC NEWS
+		if transcript.find('Spotlight: ABC')!=-1:transcript=transcript[:transcript.find('Spotlight: ABC')]
+		transcript=html_parser.unescape(transcript.decode("utf8")).replace(u"\u2026",u" ").encode('ascii','ignore').replace('\n',' ')
+		cleaned.append(transcript)
+	return cleaned
+
+
+
+def questions(data):
+	qa = []
+	cleaned = []
+	for transcript in data:
+		if len(re.findall('\[',transcript)) != 0 and len(re.findall('\[',transcript)) == len(re.findall('\]',transcript)): 
+			left = [m.start() for m in re.finditer('\[',transcript)]
+			right = [m.start() for m in re.finditer('\]',transcript)]
+			ind = range(len(left))
+			ind.reverse()
+			for q in range(len(left)):
+				if left[q] != left[-1]:
+					qa.append([transcript[left[q]+1:right[q]],transcript[right[q]+2:left[q+1]-1]])
+				else: qa.append([transcript[left[q]+1:right[q]],transcript[right[q]+2:]])
+			for p in ind:
+				transcript = transcript[:left[p]]+transcript[right[p]+1:]
+			cleaned.append(transcript)
+		else: cleaned.append(transcript)
+	return qa,cleaned
+
+
+
+
+
+# Actual stuff to execute
+
+TEXT=clintonText
+
+clintonText = cleanText(clintonText)
+clintonQA, tempClint = questions(clintonText)
+tempClint = [tempClint[i].replace('Hillary Clinton: ','').lower() for i in range(len(tempClint))]
+clintonWords = re.sub('[^A-za-z0-9]+', ' ',' '.join(tempClint)).split( )
+
+
+trumpText = cleanText(trumpText)
+trumpQA, tempTrump = questions(trumpText)
+tempTrump = [tempTrump[i].replace('Donald Trump: ','').lower() for i in range(len(tempTrump))]
+trumpWords = re.sub('[^A-za-z0-9]+', ' ',' '.join(tempTrump)).split( )
+
+
+
+stops = set(stopwords.words('english'))
+clintonWord = [w for w in clintonWords if w not in stops]
+clintonBigrams = [' '.join([clintonWord[i],clintonWord[i+1]]) for i in range(len(clintonWord)-1)]
+clintonTrigrams = [' '.join([clintonWord[i],clintonWord[i+1],clintonWord[i+2]]) for i in range(len(clintonWord)-2)]
+
+clintCount = Counter(clintonWord)
+clintBicount = Counter(clintonBigrams)
+clintTricount = Counter(clintonTrigrams)
+
+
+
+"""STILL HAVE A LOT OF CLEANING TO DO; LOOK AT BIGRAMS AND TRIGRAMS; LOTS OF SHIT YO"""
+
