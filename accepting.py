@@ -10,7 +10,7 @@ html_parser = HTMLParser.HTMLParser()
 
 
 url = 'http://www.plosone.org/article/fetchSingleRepresentation.action?uri=info:doi/10.1371/journal.pone.0026752.s001'
-labmt = pd.read_csv('/home/lee/Data/IncubatorChallenge/sentimentdict.csv',sep='\t', index_col=0)
+labmt = pd.read_csv(url,sep='\t', index_col=0)
 
 average = labmt.happiness_average.mean()
 happiness = (labmt.happiness_average - average).to_dict()
@@ -34,7 +34,7 @@ def sentSeries(l,k,txt):
 
 
 
-data = '/home/lee/Data/IncubatorChallenge/dems'
+data = 'directory for speech transcripts'
 corpus = os.listdir(data)
 text = {}
 for f in corpus:
